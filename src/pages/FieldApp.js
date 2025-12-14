@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { db, getGpsLocation } from '../db';
+import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 const severityLabels = {
@@ -27,15 +27,60 @@ const FieldApp = () => {
     0
   );
 
-  // 📍 Live GPS
-  useEffect(() => {
-    const loadLocation = async () => {
-      const gps = await getGpsLocation();
-      setLocation(gps);
-    };
-    loadLocation();
-  }, []);
+  // 📍 Live GPS Status
+  const [gpsStatus, setGpsStatus] = useState('locating'); // locating, success, error, denied
+  const [gpsError, setGpsError] = useState('');
 
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setGpsStatus('error');
+      setGpsError('Geolocation is not supported by your browser.');
+      setLocation({ latitude: 6.7029, longitude: 80.3853 });
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setGpsStatus('success');
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        let msg = error.message;
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setGpsStatus('denied');
+            msg = "User denied the request for Geolocation.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setGpsStatus('error');
+            msg = "Location information is unavailable.";
+            break;
+          case error.TIMEOUT:
+            setGpsStatus('error');
+            msg = "The request to get user location timed out.";
+            break;
+          default:
+            setGpsStatus('error');
+            msg = "An unknown error occurred.";
+        }
+        console.warn('Geolocation Error:', msg);
+        setGpsError(msg);
+
+        // Only set default if we completely lack coordinates
+        setLocation(prev => ((prev.latitude === 0 || prev.latitude === 6.7029) ? { latitude: 6.7029, longitude: 80.3853 } : prev));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
   // ⏱ Hide success alert
   useEffect(() => {
     if (saved) {
@@ -46,21 +91,20 @@ const FieldApp = () => {
 
   // 📷 Image handlers
   const handleFile = (file) => {
-  if (!file) return;
+    if (!file) return;
 
-  // ✅ ADD THIS BLOCK HERE (RIGHT AFTER null check)
-  if (file.size > 2 * 1024 * 1024) {
-    alert('Image too large (max 2MB)');
-    return;
-  }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image too large (max 2MB)');
+      return;
+    }
 
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    setPhoto(reader.result);        // Base64 for DB
-    setPhotoPreview(reader.result); // Preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhoto(reader.result);        // Base64 for DB
+      setPhotoPreview(reader.result); // Preview
+    };
+    reader.readAsDataURL(file);
   };
-  reader.readAsDataURL(file);
-};
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -70,7 +114,8 @@ const FieldApp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const gps = await getGpsLocation();
+    // drive data from live state
+    const gps = location;
 
     await db.incidents.add({
       incidentType,
@@ -88,7 +133,7 @@ const FieldApp = () => {
     setSeverity(3);
     setPhoto(null);
     setPhotoPreview(null);
-    setLocation(gps);
+    // Location continues to update automatically
   };
 
   return (
@@ -113,11 +158,20 @@ const FieldApp = () => {
 
         <form onSubmit={handleSubmit}>
           {/* GPS */}
-          <label>GPS Location</label>
+          <label>
+            GPS Location
+            {gpsStatus === 'locating' && <span style={{ fontSize: '0.8em', color: '#ea580c', marginLeft: 8 }}>⚡ Locating...</span>}
+            {gpsStatus === 'success' && <span style={{ fontSize: '0.8em', color: '#16a34a', marginLeft: 8 }}>✓ Live</span>}
+            {(gpsStatus === 'error' || gpsStatus === 'denied') && <span style={{ fontSize: '0.8em', color: '#dc2626', marginLeft: 8 }}>⚠ {gpsStatus === 'denied' ? 'Permission Denied' : 'Signal Error'}</span>}
+          </label>
+          {gpsError && <div style={{ fontSize: '0.75em', color: '#dc2626', marginBottom: 5 }}>{gpsError} Using default.</div>}
           <input
             className="input-field"
             readOnly
             value={`${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`}
+            style={{
+              background: gpsStatus === 'success' ? '#f0fdf4' : (gpsStatus === 'error' || gpsStatus === 'denied' ? '#fef2f2' : '#f9fafb')
+            }}
           />
 
           {/* Incident Type */}

@@ -1,5 +1,5 @@
 // src/components/Map.js
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -26,9 +26,9 @@ const MapPanner = ({ lat, lng }) => {
 const MapView = ({ incidents, selectedIncident }) => {
   const defaultCenter = incidents.length > 0
     ? [
-        incidents.reduce((sum, i) => sum + i.latitude, 0) / incidents.length,
-        incidents.reduce((sum, i) => sum + i.longitude, 0) / incidents.length
-      ]
+      incidents.reduce((sum, i) => sum + i.latitude, 0) / incidents.length,
+      incidents.reduce((sum, i) => sum + i.longitude, 0) / incidents.length
+    ]
     : [6.7029, 80.3853]; // fallback
 
   return (

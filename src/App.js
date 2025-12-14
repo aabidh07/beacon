@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncReportsToServer } from './db';
 import FieldApp from './pages/FieldApp';
