@@ -24,6 +24,41 @@
   color: white;
 }
 
+.container {
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.input-field {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #1e40af;
+}
+
+
+
 .App-link {
   color: #61dafb;
 }
